@@ -28,8 +28,8 @@ def evaluate_teacher_question(
 - 1 (부분적): 오개념과 관련되지만 핵심 모순을 직접 건드리지 않음
 - 2 (효과적): 반례 제시, 인지 갈등 유발, 핵심 모순을 직접 타격
 
-반드시 JSON만 반환하세요 (다른 텍스트 없이):
-{{"effect": 0, "reason": "한 문장 이유"}}"""
+반드시 JSON만 반환하세요 (다른 텍스트, 마크다운 없이). reason은 15자 이내:
+{{"effect": 0, "reason": "15자 이내"}}"""
 
     result = judge_question_effect(prompt)
     effect = int(result.get("effect", 0))
