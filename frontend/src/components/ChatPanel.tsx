@@ -122,7 +122,7 @@ export default function ChatPanel({
       <div className="border-t border-gray-100 p-4 bg-white">
         <div className="flex gap-2 items-end">
           <textarea
-            className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 min-h-[44px] max-h-32"
+            className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 min-h-[44px] max-h-32"
             placeholder="발문을 입력하세요... (Enter로 전송, Shift+Enter 줄바꿈)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
