@@ -44,10 +44,22 @@ def generate_student_response(prompt: str) -> str:
         prompt,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7,
-            max_output_tokens=1024,
+            max_output_tokens=8192,
         ),
     )
-    return response.text.strip()
+    candidate = response.candidates[0]
+    finish_reason = candidate.finish_reason
+    full_text = "".join(
+        part.text for part in candidate.content.parts if hasattr(part, "text")
+    ).strip()
+    print(f"[student_response] finish_reason={finish_reason} text={repr(full_text)}", flush=True)
+    # 프롬프트가 "이름:" 형식으로 끝나므로 모델이 이름을 에코할 수 있음 — 제거
+    if ":" in full_text:
+        first_colon = full_text.index(":")
+        # 콜론 앞이 짧으면(이름) prefix 제거
+        if first_colon < 15:
+            full_text = full_text[first_colon + 1:].strip()
+    return full_text
 
 
 def judge_question_effect(prompt: str) -> dict:
