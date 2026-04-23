@@ -150,7 +150,7 @@ export default function SessionPage() {
         </aside>
 
         {/* 가운데: 대화 */}
-        <main className="flex-1 bg-slate-50 overflow-hidden">
+        <main className="flex-1 min-h-0 bg-slate-50 overflow-hidden">
           <ChatPanel
             studentName={student.name}
             messages={messages}

@@ -1,12 +1,12 @@
-from models.student_profile import StudentProfile
+from models.student_profile import MisconceptionItem
 from models.session_state import SessionState
-from core.dialogue_act import determine_dialogue_act
 
 
 def build_chat_prompt(
     session: SessionState,
     teacher_msg: str,
     dialogue_act_instruction: str,
+    target_misconception: MisconceptionItem | None = None,
 ) -> str:
     profile = session.student_profile
 
@@ -41,8 +41,23 @@ def build_chat_prompt(
 
     # Part 4: Recap + 반응 지시
     recap_block = f"<recap>{session.recap}</recap>" if session.recap else "<recap>(첫 번째 대화)</recap>"
+    if target_misconception:
+        target_block = f"""[이번 턴의 주요 오개념]
+id: {target_misconception.id}
+오개념: {target_misconception.schema_student}
+올바른 개념: {target_misconception.schema_correct}
+현재 해소 레벨: {target_misconception.resolution_level}/4
+
+현재 반응 지시는 이 오개념에 대한 학생의 반응 상태를 우선 적용하세요.
+다른 오개념은 교사 발문이 직접 관련될 때만 함께 반영하세요."""
+    else:
+        target_block = """[이번 턴의 주요 오개념]
+교사 발문이 특정 오개념과 직접 연결되지 않았습니다.
+오개념과 무관한 질문이면 학생이 아는 범위 안에서 자연스럽게 답하세요."""
 
     part4 = f"""{recap_block}
+
+{target_block}
 
 [현재 반응 지시]
 {dialogue_act_instruction}"""

@@ -31,10 +31,11 @@ export default function ChatPanel({
   allResolved,
 }: Props) {
   const [input, setInput] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isLoading]);
 
   const handleSend = async () => {
@@ -52,9 +53,9 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-400 text-sm text-center">
@@ -76,7 +77,7 @@ export default function ChatPanel({
                 {isTeacher ? "교사 (나)" : studentName}
               </span>
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                   isTeacher
                     ? "bg-indigo-600 text-white rounded-tr-sm"
                     : "bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm"
@@ -115,11 +116,10 @@ export default function ChatPanel({
           </div>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {/* 입력창 */}
-      <div className="border-t border-gray-100 p-4 bg-white">
+      <div className="flex-shrink-0 border-t border-gray-100 p-4 bg-white">
         <div className="flex gap-2 items-end">
           <textarea
             className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 min-h-[44px] max-h-32"

@@ -36,6 +36,16 @@ def _generate_with_retry(model, prompt, generation_config):
             delay = min(delay * 2, 60)
 
 
+def _parse_json_response(text: str) -> dict:
+    """LLM 응답에서 JSON 객체만 추출."""
+    text = text.strip()
+    text = re.sub(r"```(?:json)?\s*", "", text).strip()
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return json.loads(match.group())
+    raise ValueError(f"LLM 응답에서 JSON 파싱 실패: {text}")
+
+
 def generate_student_response(prompt: str) -> str:
     """학생 응답 텍스트 생성."""
     model = _get_model()
@@ -73,13 +83,21 @@ def judge_question_effect(prompt: str) -> dict:
             max_output_tokens=1024,
         ),
     )
-    text = response.text.strip()
-    # 코드블록 제거 후 JSON 추출
-    text = re.sub(r"```(?:json)?\s*", "", text).strip()
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
-    raise ValueError(f"LLM judge 응답에서 JSON 파싱 실패: {text}")
+    return _parse_json_response(response.text)
+
+
+def classify_target_misconception(prompt: str) -> dict:
+    """교사 발문이 직접 겨냥한 오개념 분류 — JSON 응답 반환."""
+    model = _get_model()
+    response = _generate_with_retry(
+        model,
+        prompt,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.1,
+            max_output_tokens=512,
+        ),
+    )
+    return _parse_json_response(response.text)
 
 
 def update_recap(old_recap: str, teacher_msg: str, student_msg: str) -> str:

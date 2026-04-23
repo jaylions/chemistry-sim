@@ -31,6 +31,7 @@ export interface ChatResponse {
     reason: string;
     dialogue_act: string;
     updated_misconception: string | null;
+    target_selection_reason?: string;
   };
   misconception_states: Record<string, MisconceptionState>;
   all_resolved: boolean;

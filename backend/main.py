@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from models.student_profile import StudentProfile, MisconceptionItem
 from models.session_state import create_session, get_session, delete_session
-from core.misconception_resolver import evaluate_teacher_question
+from core.misconception_resolver import evaluate_teacher_question, select_target_misconception
 from core.schema_modifier import update_misconception_level, get_active_misconceptions
 from core.dialogue_act import determine_dialogue_act
 from core.prompt_builder import build_chat_prompt
@@ -131,12 +131,16 @@ def chat(session_id: str, req: ChatRequest):
     profile = session.student_profile
     active_mcs = get_active_misconceptions(profile)
 
-    # 가장 관련성 높은 오개념 하나에 대해 효과 판단
-    # (여러 오개념이 있는 경우 가장 확신도 높은 것 기준)
-    target_mc = max(active_mcs, key=lambda m: m.confidence) if active_mcs else None
+    # 교사 발문이 직접 겨냥한 오개념 하나에 대해 효과 판단
+    target_selection = select_target_misconception(teacher_msg, active_mcs)
+    target_mc = (
+        profile.get_misconception(target_selection["target_id"])
+        if target_selection["target_id"]
+        else None
+    )
 
     effect = 0
-    reason = "해소된 오개념만 있음"
+    reason = target_selection["reason"]
     new_level = 4
     updated_mc_id = None
 
@@ -154,7 +158,7 @@ def chat(session_id: str, req: ChatRequest):
     act_key, act_instruction = determine_dialogue_act(current_level, effect)
 
     # 프롬프트 조립 → 학생 응답 생성
-    prompt = build_chat_prompt(session, teacher_msg, act_instruction)
+    prompt = build_chat_prompt(session, teacher_msg, act_instruction, target_mc)
     student_response = generate_student_response(prompt)
 
     # 세션 상태 갱신
@@ -172,6 +176,7 @@ def chat(session_id: str, req: ChatRequest):
             "reason": reason,
             "dialogue_act": act_key,
             "updated_misconception": updated_mc_id,
+            "target_selection_reason": target_selection["reason"],
         },
         misconception_states=session.get_resolution_summary(),
         all_resolved=profile.all_resolved(),
