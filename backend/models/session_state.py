@@ -11,6 +11,7 @@ class SessionState:
     recap: str = ""
     turn_count: int = 0
     effective_questions: list[dict] = field(default_factory=list)
+    judgment_logs: list[dict] = field(default_factory=list)
 
     def add_teacher_message(self, content: str):
         self.message_history.append({"role": "teacher", "content": content})
@@ -27,6 +28,12 @@ class SessionState:
                 "effect_level": effect_level,
                 "reason": reason,
             })
+
+    def log_judgment(self, judgment: dict):
+        self.judgment_logs.append({
+            "turn": self.turn_count,
+            **judgment,
+        })
 
     def get_resolution_summary(self) -> dict:
         return {

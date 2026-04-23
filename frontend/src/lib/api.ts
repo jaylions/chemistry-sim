@@ -32,9 +32,28 @@ export interface ChatResponse {
     dialogue_act: string;
     updated_misconception: string | null;
     target_selection_reason?: string;
+    target_misconception?: string | null;
+    target_description?: string | null;
+    previous_level?: number | null;
+    new_level?: number | null;
   };
   misconception_states: Record<string, MisconceptionState>;
   all_resolved: boolean;
+}
+
+export interface JudgmentLog {
+  turn: number;
+  teacher_message: string;
+  student_response: string;
+  effect_level: number;
+  reason: string;
+  dialogue_act: string;
+  updated_misconception: string | null;
+  target_selection_reason: string;
+  target_misconception: string | null;
+  target_description: string | null;
+  previous_level: number | null;
+  new_level: number | null;
 }
 
 export interface ReportResponse {
@@ -49,6 +68,7 @@ export interface ReportResponse {
     effect_level: number;
     reason: string;
   }>;
+  judgment_logs: JudgmentLog[];
   misconception_states: Record<string, MisconceptionState>;
 }
 

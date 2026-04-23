@@ -1,5 +1,9 @@
+import logging
+
 from models.student_profile import MisconceptionItem
 from llm.gemini_client import classify_target_misconception, judge_question_effect
+
+logger = logging.getLogger(__name__)
 
 
 def select_target_misconception(
@@ -44,7 +48,12 @@ def select_target_misconception(
 반드시 JSON만 반환하세요 (다른 텍스트, 마크다운 없이). target_id는 오개념 id 또는 null이고, reason은 15자 이내:
 {{"target_id": "B1", "reason": "15자 이내"}}"""
 
-    result = classify_target_misconception(prompt)
+    try:
+        result = classify_target_misconception(prompt)
+    except ValueError as e:
+        logger.warning("타깃 오개념 분류 실패: %s", e)
+        return {"target_id": None, "reason": "분류 실패"}
+
     raw_target_id = result.get("target_id")
     target_id = raw_target_id.strip() if isinstance(raw_target_id, str) else None
     if target_id and target_id.lower() in {"null", "none", "없음"}:
@@ -89,8 +98,17 @@ def evaluate_teacher_question(
 반드시 JSON만 반환하세요 (다른 텍스트, 마크다운 없이). reason은 15자 이내:
 {{"effect": 0, "reason": "15자 이내"}}"""
 
-    result = judge_question_effect(prompt)
-    effect = int(result.get("effect", 0))
+    try:
+        result = judge_question_effect(prompt)
+    except ValueError as e:
+        logger.warning("발문 효과 판정 실패: %s", e)
+        return {"effect": 0, "reason": "판정 실패", "new_level": current_level}
+
+    try:
+        effect = int(result.get("effect", 0))
+    except (TypeError, ValueError):
+        effect = 0
+    effect = max(0, min(2, effect))
     result["effect"] = effect
     result["new_level"] = min(4, current_level + effect)
     return result

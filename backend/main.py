@@ -141,10 +141,12 @@ def chat(session_id: str, req: ChatRequest):
 
     effect = 0
     reason = target_selection["reason"]
-    new_level = 4
+    previous_level = None
+    new_level = None
     updated_mc_id = None
 
     if target_mc:
+        previous_level = target_mc.resolution_level
         eval_result = evaluate_teacher_question(teacher_msg, target_mc, target_mc.resolution_level)
         effect = eval_result["effect"]
         reason = eval_result["reason"]
@@ -154,7 +156,7 @@ def chat(session_id: str, req: ChatRequest):
         update_misconception_level(profile, target_mc.id, new_level, effect)
 
     # Dialogue Act 결정
-    current_level = new_level if target_mc else 4
+    current_level = new_level if new_level is not None else 4
     act_key, act_instruction = determine_dialogue_act(current_level, effect)
 
     # 프롬프트 조립 → 학생 응답 생성
@@ -165,19 +167,29 @@ def chat(session_id: str, req: ChatRequest):
     session.add_teacher_message(teacher_msg)
     session.add_student_message(student_response)
     session.log_effective_question(teacher_msg, effect, reason)
+    turn_analysis = {
+        "effect_level": effect,
+        "reason": reason,
+        "dialogue_act": act_key,
+        "updated_misconception": updated_mc_id,
+        "target_selection_reason": target_selection["reason"],
+        "target_misconception": target_mc.id if target_mc else None,
+        "target_description": target_mc.description if target_mc else None,
+        "previous_level": previous_level,
+        "new_level": new_level,
+    }
+    session.log_judgment({
+        **turn_analysis,
+        "teacher_message": teacher_msg,
+        "student_response": student_response,
+    })
 
     # Recap 업데이트 (비동기적으로 처리해도 되지만 우선 동기)
     session.recap = update_recap(session.recap, teacher_msg, student_response)
 
     return ChatResponse(
         student_response=student_response,
-        turn_analysis={
-            "effect_level": effect,
-            "reason": reason,
-            "dialogue_act": act_key,
-            "updated_misconception": updated_mc_id,
-            "target_selection_reason": target_selection["reason"],
-        },
+        turn_analysis=turn_analysis,
         misconception_states=session.get_resolution_summary(),
         all_resolved=profile.all_resolved(),
     )
@@ -200,6 +212,7 @@ def get_report(session_id: str):
         "resolved_misconceptions": resolved,
         "unresolved_misconceptions": unresolved,
         "effective_questions": session.effective_questions,
+        "judgment_logs": session.judgment_logs,
         "misconception_states": mc_states,
     }
 

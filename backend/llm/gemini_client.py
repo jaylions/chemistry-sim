@@ -40,9 +40,41 @@ def _parse_json_response(text: str) -> dict:
     """LLM 응답에서 JSON 객체만 추출."""
     text = text.strip()
     text = re.sub(r"```(?:json)?\s*", "", text).strip()
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        return json.loads(match.group())
+    candidates = []
+
+    complete_match = re.search(r"\{.*\}", text, re.DOTALL)
+    if complete_match:
+        candidates.append(complete_match.group())
+
+    open_match = re.search(r"\{.*", text, re.DOTALL)
+    if open_match:
+        candidates.append(open_match.group())
+
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    source = candidates[-1] if candidates else text
+    recovered = {}
+
+    target_match = re.search(r'"target_id"\s*:\s*(null|"([^"]*)")', source)
+    if target_match:
+        recovered["target_id"] = target_match.group(2) if target_match.group(1) != "null" else None
+
+    effect_match = re.search(r'"effect"\s*:\s*([0-2])', source)
+    if effect_match:
+        recovered["effect"] = int(effect_match.group(1))
+
+    reason_match = re.search(r'"reason"\s*:\s*"([^"\r\n}]*)', source)
+    if reason_match:
+        recovered["reason"] = reason_match.group(1)
+
+    if recovered:
+        logger.warning("Malformed LLM JSON recovered: %r", text)
+        return recovered
+
     raise ValueError(f"LLM 응답에서 JSON 파싱 실패: {text}")
 
 

@@ -105,7 +105,11 @@ export default function SessionPage() {
   if (showReport && report) {
     return (
       <div className="min-h-screen bg-slate-50 overflow-y-auto py-8">
-        <SessionReport report={report} onRestart={handleRestart} />
+        <SessionReport
+          report={report}
+          onBack={() => setShowReport(false)}
+          onRestart={handleRestart}
+        />
       </div>
     );
   }
@@ -132,7 +136,7 @@ export default function SessionPage() {
           onClick={handleShowReport}
           className="text-sm bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
         >
-          리포트 보기
+          분석 로그 보기
         </button>
       </header>
 
